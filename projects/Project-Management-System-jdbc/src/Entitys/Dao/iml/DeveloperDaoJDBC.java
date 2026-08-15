@@ -116,7 +116,6 @@ public class DeveloperDaoJDBC implements DeveloperDao {
     @Override
     public void update(Developer developer) {
         try(PreparedStatement  stmt  = conn.prepareStatement( "UPDATE developer SET id_company = ?, name = ?, email = ?, city = ?, birth_date = ?, work_area = ?, status = ? WHERE id = ?")){
-            stmt.setInt(1,developer.getId_company());
             stmt.setInt(1, developer.getId_company());
             stmt.setString(2, developer.getName());
             stmt.setString(3, developer.getEmail());
