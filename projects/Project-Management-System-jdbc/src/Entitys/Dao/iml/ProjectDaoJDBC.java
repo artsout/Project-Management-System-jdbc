@@ -33,7 +33,7 @@ public class ProjectDaoJDBC implements ProjectDao {
                         c=instanciateCompany(rs);
                         map.put(rs.getInt("comp_id"),c);
                     }
-                    Project p =new Project();
+                    Project p =instanciateProject(rs,c);
                     list.add(p);
                 }
                 return list;
@@ -45,7 +45,25 @@ public class ProjectDaoJDBC implements ProjectDao {
 
     @Override
     public List<Project> findByStatus(Project_Status project_status) {
-        return List.of();
+        List<Project> list = new ArrayList<>();
+        Map<Integer,Company> map = new HashMap<>();
+        try(PreparedStatement ps = conn.prepareStatement("SELECT project.*,company.id as comp_id,company.name as comp_name From project inner join company on project.id_company=company.id where  project.status=?")){
+            ps.setString(1, project_status.name());
+                try(ResultSet rs = ps.executeQuery()){
+                    while (rs.next()){
+                        Company c = map.get(rs.getInt("comp_id"));
+                        if(c==null){
+                            c=instanciateCompany(rs);
+                            map.put(rs.getInt("comp_id"),c);
+                        }
+                        Project p = instanciateProject(rs,c);
+                        list.add(p);
+                    }
+                    return list;
+                }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
     }
 
     @Override
@@ -64,6 +82,8 @@ public class ProjectDaoJDBC implements ProjectDao {
                         c=instanciateCompany(rs);
                         map.put(rs.getInt("comp_id"),c);
                     }
+                    Project p=instanciateProject(rs,c);
+                    list.add(p);
                 }
                 return list;
             }
@@ -74,17 +94,87 @@ public class ProjectDaoJDBC implements ProjectDao {
 
     @Override
     public void update(Project project) {
+        try(PreparedStatement ps = conn.prepareStatement("UPDATE project SET id_company = ?, name = ?, description = ?, start = ?, dead_line = ?, status = ? WHERE id = ?")){
+            if (project.getId_company() != null) {
+                ps.setInt(1, project.getId_company());
+            } else {
+                ps.setNull(1, java.sql.Types.INTEGER);
+            }
 
+            ps.setString(2, project.getName());
+            ps.setString(3, project.getDescription());
+            if (project.getStart() != null) {
+                ps.setDate(4, java.sql.Date.valueOf(project.getStart()));
+            } else {
+                ps.setNull(4, java.sql.Types.DATE);
+            }
+            if (project.getDelivered_Deadline() != null) {
+                ps.setDate(5, java.sql.Date.valueOf(project.getDelivered_Deadline()));
+            } else {
+                ps.setNull(5, java.sql.Types.DATE);
+            }
+
+            // 6. status (Converte o Enum para String)
+            if (project.getStatus() != null) {
+                ps.setString(6, project.getStatus().name());
+            } else {
+                ps.setNull(6, java.sql.Types.VARCHAR);
+            }
+
+            ps.setInt(7, project.getId());
+
+
+            int row =ps.executeUpdate();
+            if(row==0){
+                throw new DbException("No row affected");
+            }
+        } catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
     }
 
     @Override
     public Project deleteByID(Integer id) {
-        return null;
+         Project aux = findById(id);
+         if(aux == null){
+             throw new DbException("Id not found");
+         }
+        try(PreparedStatement ps = conn.prepareStatement("DELETE from project where project.id=?")){
+            ps.setInt(1,id);
+             try(ResultSet rs = ps.executeQuery()) {
+                 if(rs.next()){
+                     return aux;
+                 }else {
+                     return null;
+                 }
+             }
+        }catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
     }
+
 
     @Override
     public List<Project> findAll() {
-        return List.of();
+        List<Project> list = new ArrayList<>();
+        Map<Integer,Company> map = new HashMap<>();
+        try(PreparedStatement ps = conn.prepareStatement("SELECT project.*,company.id as comp_id,company.name as comp_name From project inner join company on project.id_company=company.id")){
+            try(ResultSet rs = ps.executeQuery()){
+                while(rs.next()){
+                    Company c = map.get(rs.getInt("comp_id"));
+                    if(c==null){
+                        c=instanciateCompany(rs);
+                        map.put(rs.getInt("comp_id"),c);
+                    }
+                    Project p = instanciateProject(rs,c);
+                    list.add(p);
+
+                }
+                return list;
+            }
+        }catch (SQLException e) {
+            throw new DbException(e.getMessage());
+        }
     }
 
     @Override
@@ -107,7 +197,7 @@ public class ProjectDaoJDBC implements ProjectDao {
 
     @Override
     public void save(Project project) {
-        try(PreparedStatement ps = conn.prepareStatement("INSERT INTO project (id_company,name,description,start,delivered_Deadline,status,company) values (?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)){
+        try(PreparedStatement ps = conn.prepareStatement("INSERT INTO project (id_company,name,description,start,delivered_Deadline,status,company) values (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)){
             if (project.getId_company() != null) {
 
                     ps.setInt(1, project.getId_company());
@@ -119,8 +209,8 @@ public class ProjectDaoJDBC implements ProjectDao {
             ps.setString(3, project.getDescription());
             ps.setDate(4, java.sql.Date.valueOf(project.getStart()));
             ps.setDate(5, java.sql.Date.valueOf(project.getDelivered_Deadline()));
-            ps.setString(7, project.getStatus().name());
-            ps.setInt(8, project.getId());
+            ps.setString(6, project.getStatus().name());
+
 
            int row = ps.executeUpdate();
 
@@ -133,7 +223,7 @@ public class ProjectDaoJDBC implements ProjectDao {
                }
            }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new DbException(e.getMessage());
         }
     }
     public  Project instanciateProject(ResultSet rs,Company c) throws SQLException {

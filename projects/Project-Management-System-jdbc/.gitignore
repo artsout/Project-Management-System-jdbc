@@ -27,6 +27,6 @@ bin/
 .vscode/
 
 ### Mac OS ###
-.DS_Storedb.properties
+.DS_Store
 db.properties
-db.properties
+**/db.properties
