@@ -31,7 +31,7 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
         Map<Integer,Company>map1=new HashMap<>();
         Map<Integer,Project>map2=new HashMap<>();
         Map<Integer,Developer>map3=new HashMap<>();
-       try(PreparedStatement ps = conn.prepareStatement("SELECT project_allocation.*,developer.id as dev_id ,project.id as pro_id,project.name as pro_name,company.id as com_id FROM project_allocation inner join project on project_allocation.id_project=project.id INNER JOIN developer ON project_allocation.id_developer = developer.id inner join company on project.id_company=company.id where project.id=?")){
+       try(PreparedStatement ps = conn.prepareStatement("SELECT project_allocation.*,developer.id as dev_id ,project.id as pro_id,project.name as pro_name,company.id as com_id FROM project_allocation inner join project on project_allocation.id_project=project.id inner join company on project.id_company=company.id where project.id=?")){
             ps.setInt(1,project.getId());
 
             try(ResultSet rs = ps.executeQuery()){
@@ -159,54 +159,21 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
 
     @Override
     public void update(Project_Allocation projectAllocation) {
-        try(PreparedStatement ps = conn.prepareStatement("UPDATE project_allocation SET id_project = ?, id_developer = ?, hours_allocated = ? WHERE id = ?")){
-            ps.setInt(1,projectAllocation.getId_project());
-            ps.setInt(2,projectAllocation.getId_developer());
-            ps.setDate(3, Date.valueOf(projectAllocation.getHours_allocated()));
-            ps.setInt(4,projectAllocation.getId());
-            int row = ps.executeUpdate();
-            if(row==0){
-                throw  new DbException("No row affected");
-            }
-        } catch (SQLException e) {
-            throw new DbException(e.getMessage());
-        }
+
     }
 
     @Override
     public Project_Allocation deleteByID(Integer id) {
-        if(findById(id)==null){
-            throw new DbException("Developer not found for deletion");
-        }
-        try(PreparedStatement ps = conn.prepareStatement("DELETE  from project_allocation where project_allocation.id=?")){
-            ps.setInt(1,id);
-
-            int row = ps.executeUpdate();
-            if(row>0){
-                return findById(id);
-            }else{
-                return null;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return null;
     }
 
     @Override
     public List<Project_Allocation> findAll(){
-        String sql = "SELECT project_allocation.*, " +
-                "developer.*, developer.id as dev_id, developer.name as dev_name, " +
-                "project.*, project.id as pro_id, project.name as pro_name, " +
-                "company.*, company.id as com_id, company.name as com_name " +
-                "FROM project_allocation " +
-                "INNER JOIN developer ON project_allocation.id_developer = developer.id " +
-                "INNER JOIN project ON project_allocation.id_project = project.id " +
-                "INNER JOIN company ON company.id = project.id_company";
         List<Project_Allocation>list = new ArrayList<>();
         Map<Integer,Company>map1=new HashMap<>();
         Map<Integer,Project>map2=new HashMap<>();
         Map<Integer,Developer>map3=new HashMap<>();
-        try(PreparedStatement ps = conn.prepareStatement(sql)){
+        try(PreparedStatement ps = conn.prepareStatement("SELECT project_allocation.*,developer.id as dev_id,developer.name as dev_name,project.id as pro_id,project.name as pro_name,company.id as com_id FROM project_allocation inner join developer on project_allocation.id_developer=developer.id inner join project on project_allocation.id_project=project.id inner join company on company.id=project.id_company")){
             try(ResultSet rs = ps.executeQuery()){
                 while (rs.next()){
                     Company c = map1.get(rs.getInt("com_id"));
@@ -244,7 +211,6 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
             try(ResultSet rs = ps.executeQuery()){
                 if(rs.next()){
                     Project_Allocation pa = new Project_Allocation();
-                    pa.setId(rs.getInt("id"));
                     pa.setId_project(rs.getInt("id_project"));
                     pa.setId_developer(rs.getInt("id_developer"));
 
@@ -257,35 +223,18 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
                 }
             }
         }catch (SQLException e) {
-            throw new DbException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void save(Project_Allocation projectAllocation) {
-        try(PreparedStatement ps = conn.prepareStatement("INSERT INTO project_allocation (id_project, id_developer, hours_allocated) VALUES (?, ?, ?)",Statement.RETURN_GENERATED_KEYS)){
-            ps.setInt(1,projectAllocation.getId_project());
-            ps.setInt(2,projectAllocation.getId_developer());
-            ps.setDate(3, Date.valueOf(projectAllocation.getHours_allocated()));
 
-            int row=ps.executeUpdate();
-            if(row>0){
-                try(ResultSet rs =ps.getGeneratedKeys()){
-                    if(rs.next()){
-                        int id  =rs.getInt(1);
-                        projectAllocation.setId(id);
-                    }else
-                        throw new DbException("No keys generated");
-                }
-            }
-        } catch (SQLException e) {
-            throw new DbException(e.getMessage());
-        }
     }
 
     public Project_Allocation instanciateProjectAllocation(ResultSet rs, Project p, Developer d) throws SQLException {
         Project_Allocation pa = new Project_Allocation();
-        pa.setId(rs.getInt("id"));
+
         pa.setId_project(rs.getInt("id_project"));
         pa.setId_developer(rs.getInt("id_developer"));
 
@@ -306,13 +255,13 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
             p.setId(rs.getInt("pro_id"));
             p.setId_company(rs.getInt("id_company"));
             p.setName(rs.getString("pro_name"));
-            p.setDescription(rs.getString("description"));
+            p.setDescription(rs.getString("pro_description"));
 
-            if (rs.getDate("start") != null) {
-                p.setStart(rs.getDate("start").toLocalDate());
+            if (rs.getDate("pro_start") != null) {
+                p.setStart(rs.getDate("pro_start").toLocalDate());
             }
             if (rs.getDate("delivered_deadline") != null) {
-                p.setDelivered_Deadline(rs.getDate("delivered_deadline").toLocalDate());
+                p.setDelivered_Deadline(rs.getDate("pro_delivered_deadline").toLocalDate());
             }
 
             if (rs.getString("pro_status") != null) {
@@ -326,22 +275,20 @@ public class Project_AllocationDaoJDBC implements Project_AllocationDao {
         d.setId(rs.getInt("dev_id"));
         d.setId_company(rs.getInt("id_company"));
         d.setName(rs.getString("dev_name"));
-
-
-        d.setEmail(rs.getString("email"));
-        d.setCity(rs.getString("city"));
-        d.setBirthDate(rs.getDate("birth_date").toLocalDate());
-        d.setWork_Area(rs.getString("work_area"));
-        d.setStatus(Developer_Status.valueOf(rs.getString("status")));
+        d.setEmail(rs.getString("dev_email"));
+        d.setCity(rs.getString("dev_city"));
+        d.setBirthDate(rs.getDate("dev_birth_date").toLocalDate());
+        d.setWork_Area(rs.getString("dev_work_area"));
+        d.setStatus(Developer_Status.valueOf(rs.getString("dev_status")));
         d.setCompany(c);
-        return d;
+        return  d;
     }
     public Company instantiateCompany(ResultSet rs) throws SQLException {
         Company c =new Company();
         c.setId(rs.getInt("comp_id"));
         c.setName(rs.getString("comp_name"));
-        c.setCnpj(rs.getString("cnpj"));
-        c.setCity(rs.getString("city"));
+        c.setCnpj(rs.getString("comp_cnpj"));
+        c.setCity(rs.getString("comp_city"));
         return  c;
     }
 }
