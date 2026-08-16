@@ -38,6 +38,9 @@ public class CompanyDaoJDBC implements Dao <Company> , CompanyDao {
 
     @Override
     public  Company deleteByID(Integer id) {
+        if(findById(id)==null){
+            throw new DbException("Developer not found for deletion");
+        }
         try(PreparedStatement ps = conn.prepareStatement("Delete from company where company.id=?")){
                 ps.setInt(1,id);
                 try (ResultSet rs = ps.executeQuery()){
