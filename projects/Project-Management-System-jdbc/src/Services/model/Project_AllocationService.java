@@ -1,6 +1,7 @@
 package Services.model;
 
 import Entitys.Dao.Dao;
+import Entitys.Dao.Project_AllocationDao;
 import Entitys.Developer;
 import Entitys.Enums.Developer_Status;
 import Entitys.Enums.Project_Status;
@@ -11,13 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-public interface Project_AllocationService extends Dao<Project_Allocation> {
-
-    List<Project_Allocation> findByProject(Project project);
-
-    List<Project_Allocation> findByDeveloper(Developer developer);
-
-    List<Project_Allocation> findByPeriod(LocalDate start, LocalDate end);
+public interface Project_AllocationService extends Project_AllocationDao {
 
     Map<Project_Status, List<Project_Allocation>> groupAllocationsByProjectStatus(Project project);
 

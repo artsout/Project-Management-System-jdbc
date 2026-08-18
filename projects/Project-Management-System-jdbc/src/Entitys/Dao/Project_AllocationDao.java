@@ -7,7 +7,7 @@ import Entitys.Project_Allocation;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface Project_AllocationDao extends Dao <Project_Allocation>{
+public interface Project_AllocationDao extends Dao<Project_Allocation>{
 
     List<Project_Allocation> findByProject(Project project);
     List<Project_Allocation> findByDeveloper(Developer developer);
