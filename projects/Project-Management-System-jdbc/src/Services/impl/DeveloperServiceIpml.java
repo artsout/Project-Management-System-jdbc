@@ -68,14 +68,19 @@ public class DeveloperServiceIpml implements DeveloperService {
 
     @Override
     public void update(Developer developer) {
-        if(developer==null){
-            throw  new DbException("put something developer cant be null");
+        if (developer == null) {
+            throw new DbException("put something developer cant be null");
         }
-        if(developerDao.findByEmail(developer.getEmail())!=null){
-            throw  new DbException("Email is unique,aready exist this email");
+            if (developer.getEmail() != null ) {
+                Developer d = developerDao.findByEmail(developer.getEmail());
+
+                if (d != null && !developer.getId().equals(d.getId())) {
+                    throw new DbException("Email is already in use by another developer");
+                }
+                developerDao.update(developer);
+            }
         }
-        developerDao.update(developer);
-    }
+    
 
     @Override
     public Developer deleteById(Integer id) {
@@ -104,7 +109,7 @@ public class DeveloperServiceIpml implements DeveloperService {
         if(id==null){
             throw  new DbException("put something id cant be null");
         }
-        Developer d = findById(id);
+        Developer d = developerDao.findById(id);
 
         if(d==null){
             throw  new DbException("This id do not exist");
@@ -117,8 +122,10 @@ public class DeveloperServiceIpml implements DeveloperService {
         if(developer==null){
             throw  new DbException("put something developer cant be null");
         }
-        if(developer.getId() !=null && developerDao.findById(developer.getId())!=null){
-            throw  new DbException("Id is unique,aready exist this id");
+
+        if (developer.getId() != null || developerDao.findById(developer.getId()) != null) {
+                throw new DbException("Id already exists");
+
         }
         if((developerDao.findByEmail(developer.getEmail()))!=null && !developerDao.findByEmail(developer.getEmail()).getId().equals(developer.getId())){
             throw  new DbException("Email is unique,aready exist this email");
